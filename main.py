@@ -6,6 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 app = FastAPI()
 API_KEY = os.getenv("GPT_API_KEY", "your-secret-key")
+GOOGLE_CREDENTIALS_FILE = "/etc/secrets/ai-car-cloud.json"
 SHEET_NAME = "Sheet1"
 def load_inventory():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
