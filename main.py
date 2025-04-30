@@ -1,0 +1,40 @@
+from fastapi import FastAPI, Request, HTTPException
+import pandas as pd
+import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+app = FastAPI()
+API_KEY = os.getenv("GPT_API_KEY", "your-secret-key")
+GOOGLE_CREDENTIALS_FILE = "/etc/secrets/ai-car-cloud.json"  # Render secret file path
+GOOGLE_SHEET_NAME = "Inventory"
+SHEET_NAME = "Sheet1"
+
+def load_inventory():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDENTIALS_FILE, scope)
+    client = gspread.authorize(creds)
+    sheet = client.open(GOOGLE_SHEET_NAME).worksheet(SHEET_NAME)
+    data = sheet.get_all_records()
+    return pd.DataFrame(data)
+
+df = load_inventory()
+
+@app.get("/search")
+def search_inventory(request: Request, model: str = None, color: str = None, price_max: int = None):
+    if request.headers.get("Authorization") != f"Bearer {API_KEY}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    result = df.copy()
+    if model:
+        result = result[result["Model"].str.contains(model, case=False, na=False)]
+    if color:
+        result = result[
+            result["Exterior Specific Color"].str.contains(color, case=False, na=False) |
+            result["Exterior Generic Color"].str.contains(color, case=False, na=False) |
+            result["Exterior Shade"].str.contains(color, case=False, na=False)
+        ]
+    if price_max:
+        result = result[result["Price"] <= price_max]
+
+    return result.head(5).to_dict(orient="records")

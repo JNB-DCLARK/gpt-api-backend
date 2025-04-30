@@ -1,0 +1,71 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "BMW Inventory Search API",
+    "version": "1.0.0",
+    "description": "Search dealership inventory by model, color, and price from Google Sheets."
+  },
+  "paths": {
+    "/search": {
+      "get": {
+        "summary": "Search Inventory",
+        "description": "Returns matching vehicles",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Car model"
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Color keyword"
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Maximum price"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
