@@ -6,15 +6,14 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 app = FastAPI()
 API_KEY = os.getenv("GPT_API_KEY", "your-secret-key")
-GOOGLE_CREDENTIALS_FILE = "/etc/secrets/ai-car-cloud.json"  # Render secret file path
-GOOGLE_SHEET_NAME = "Inventory"
 SHEET_NAME = "Sheet1"
-
 def load_inventory():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDENTIALS_FILE, scope)
     client = gspread.authorize(creds)
-    sheet = client.open(GOOGLE_SHEET_NAME).worksheet(SHEET_NAME)
+
+    spreadsheet_id = "14IHso5bytCY2InXw9Ba8-BNUFuNIAjuWmJC14Pr7Vmo"
+    sheet = client.open_by_key(spreadsheet_id).worksheet(SHEET_NAME)
     data = sheet.get_all_records()
     return pd.DataFrame(data)
 
