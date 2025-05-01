@@ -23,45 +23,8 @@ print("✅ Inventory loaded:", len(df), "rows")
 print("🧪 Columns:", df.columns.tolist())
 
 @app.get("/search")
-def search_inventory(
-    request: Request,
-    model: str = None,
-    make: str = None,
-    trim: str = None,
-    color: str = None,
-    body_type: str = None,
-    price_max: int = None,
-    stock: str = None
-):
+def search_inventory(request: Request):
     if request.headers.get("Authorization") != f"Bearer {API_KEY}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    result = df.copy()
-
-    if model:
-        result = result[result["Model"].str.contains(model, case=False, na=False)]
-
-    if make:
-        result = result[result["Make"].str.contains(make, case=False, na=False)]
-
-    if trim:
-        result = result[result["Trim"].str.contains(trim, case=False, na=False)]
-
-    if color:
-        result = result[
-            result["Exterior Specific Color"].str.contains(color, case=False, na=False) |
-            result["Exterior Generic Color"].str.contains(color, case=False, na=False) |
-            result["Exterior Shade"].str.contains(color, case=False, na=False)
-        ]
-
-    if body_type:
-        result = result[result["Body Type"].str.contains(body_type, case=False, na=False)]
-
-    if price_max:
-        result = result[result["Price"] <= price_max]
-
-    if stock:
-        result = result[result["Stock"].astype(str).str.contains(stock, case=False, na=False)]
-
-    return result.head(10).to_dict(orient="records")
-
+    return df.head(10).to_dict(orient="records")
