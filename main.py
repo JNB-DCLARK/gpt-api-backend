@@ -19,6 +19,8 @@ def load_inventory():
     return pd.DataFrame(data)
 
 df = load_inventory()
+print("✅ Inventory loaded:", len(df), "rows")
+print("🧪 Columns:", df.columns.tolist())
 
 @app.get("/search")
 def search_inventory(request: Request, model: str = None, color: str = None, price_max: int = None):
