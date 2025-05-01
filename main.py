@@ -4,15 +4,22 @@ import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-app = FastAPI()
+app = FastAPI(
+    title="Inventory API",
+    version="1.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
+
 API_KEY = os.getenv("GPT_API_KEY", "your-secret-key")
 GOOGLE_CREDENTIALS_FILE = "/etc/secrets/ai-car-cloud.json"
 SHEET_NAME = "Sheet1"
+
 def load_inventory():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDENTIALS_FILE, scope)
     client = gspread.authorize(creds)
-
     spreadsheet_id = "14IHso5bytCY2InXw9Ba8-BNUFuNIAjuWmJC14Pr7Vmo"
     sheet = client.open_by_key(spreadsheet_id).worksheet(SHEET_NAME)
     data = sheet.get_all_records()
@@ -26,10 +33,13 @@ print("🧪 Columns:", df.columns.tolist())
 def search_inventory(request: Request):
     if request.headers.get("Authorization") != f"Bearer {API_KEY}":
         raise HTTPException(status_code=401, detail="Unauthorized")
-
-    print("📊 DataFrame shape:", df.shape)
-    print("🧪 Columns:", df.columns.tolist())
-    print("🔍 First row:", df.iloc[0].to_dict() if not df.empty else "EMPTY")
-
     return df.head(5).to_dict(orient="records")
+
+@app.get("/")
+def root():
+    return {"message": "API is live!", "try_docs": "/docs"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
