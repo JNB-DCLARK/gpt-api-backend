@@ -27,4 +27,9 @@ def search_inventory(request: Request):
     if request.headers.get("Authorization") != f"Bearer {API_KEY}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    return df.head(10).to_dict(orient="records")
+    print("📊 DataFrame shape:", df.shape)
+    print("🧪 Columns:", df.columns.tolist())
+    print("🔍 First row:", df.iloc[0].to_dict() if not df.empty else "EMPTY")
+
+    return df.head(5).to_dict(orient="records")
+
