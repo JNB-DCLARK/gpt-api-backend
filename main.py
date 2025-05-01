@@ -41,7 +41,11 @@ def search_inventory(request: Request):
 
 @app.get("/")
 def root():
-    return {"message": "API is live!", "try_docs": "/docs"}
+    return {
+        "status": "ok",
+        "message": "API is live!",
+        "endpoints": ["/search", "/docs", "/health"]
+    }
 
 @app.get("/health")
 def health_check():
