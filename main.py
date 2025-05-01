@@ -31,9 +31,12 @@ print("✅ Inventory loaded:", len(df), "rows")
 print("🧪 Columns:", df.columns.tolist())
 
 @app.get("/search")
+
 def search_inventory(request: Request):
     if request.headers.get("Authorization") != f"Bearer {API_KEY}":
         raise HTTPException(status_code=401, detail="Unauthorized")
+    print("🔥 RETURNING rows:", len(df))
+    print("🔍 First row:", df.iloc[0].to_dict() if not df.empty else "EMPTY")
     return df.head(5).to_dict(orient="records")
 
 @app.get("/")
