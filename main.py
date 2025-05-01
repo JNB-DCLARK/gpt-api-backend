@@ -4,6 +4,7 @@ import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
+# ✅ Correct placement of app initialization
 app = FastAPI(
     title="Inventory API",
     version="1.0",
@@ -12,7 +13,7 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-API_KEY = os.getenv("GPT_API_KEY", "your-secret-key")
+API_KEY = os.getenv("GPT_API_KEY", "988ed1c7591b9085458df556b688be10")
 GOOGLE_CREDENTIALS_FILE = "/etc/secrets/ai-car-cloud.json"
 SHEET_NAME = "Sheet1"
 
@@ -42,4 +43,3 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
-
