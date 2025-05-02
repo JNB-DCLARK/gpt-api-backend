@@ -1,10 +1,9 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Query
 import pandas as pd
 import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# ✅ Correct placement of app initialization
 app = FastAPI(
     title="Inventory API",
     version="1.0",
@@ -30,15 +29,6 @@ df = load_inventory()
 print("✅ Inventory loaded:", len(df), "rows")
 print("🧪 Columns:", df.columns.tolist())
 
-@app.get("/search")
-
-def search_inventory(request: Request):
-    if request.headers.get("Authorization") != f"Bearer {API_KEY}":
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    print("🔥 RETURNING rows:", len(df))
-    print("🔍 First row:", df.iloc[0].to_dict() if not df.empty else "EMPTY")
-    return df.head(5).to_dict(orient="records")
-
 @app.get("/")
 def root():
     return {
@@ -50,3 +40,15 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/search")
+def search_inventory(
+    request: Request,
+    limit: int = Query(50, description="Max number of results to return"),
+    offset: int = Query(0, description="Starting index for pagination")
+):
+    if request.headers.get("Authorization") != f"Bearer {API_KEY}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    sliced_df = df.iloc[offset:offset + limit]
+    return sliced_df.to_dict(orient="records")
