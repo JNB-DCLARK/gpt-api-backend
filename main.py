@@ -44,7 +44,7 @@ def health_check():
 @app.get("/search")
 def search_inventory(
     request: Request,
-    limit: int = Query(50, description="Max number of results to return"),
+    limit: int = Query(150, description="Max number of results to return"),
     offset: int = Query(0, description="Starting index for pagination")
 ):
     if request.headers.get("Authorization") != f"Bearer {API_KEY}":
