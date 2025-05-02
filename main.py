@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, HTTPException, Query
 import pandas as pd
 import os
 import gspread
+from typing import Optional
 from oauth2client.service_account import ServiceAccountCredentials
 
 app = FastAPI(
@@ -44,11 +45,32 @@ def health_check():
 @app.get("/search")
 def search_inventory(
     request: Request,
-    limit: int = Query(150, description="Max number of results to return"),
+    make: Optional[str] = None,
+    model: Optional[str] = None,
+    price: Optional[float] = None,
+    year: Optional[int] = None,
+    color: Optional[str] = None,
+    drivetrain: Optional[str] = None,
+    limit: int = Query(50, description="Max number of results to return"),
     offset: int = Query(0, description="Starting index for pagination")
 ):
     if request.headers.get("Authorization") != f"Bearer {API_KEY}":
         raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    sliced_df = df.iloc[offset:offset + limit]
-    return sliced_df.to_dict(orient="records")
+
+    filtered_df = df.copy()
+
+    if make:
+        filtered_df = filtered_df[filtered_df["Make"].str.lower() == make.lower()]
+    if model:
+        filtered_df = filtered_df[filtered_df["Model"].str.lower() == model.lower()]
+    if price:
+        filtered_df = filtered_df[filtered_df["Price"].astype(float) <= price]
+    if year:
+        filtered_df = filtered_df[filtered_df["Year"].astype(int) == year]
+    if color:
+        filtered_df = filtered_df[filtered_df["Exterior Specific Color"].str.lower().str.contains(color.lower(), na=False)]
+    if drivetrain:
+        filtered_df = filtered_df[filtered_df["Drivetrain"].str.lower().str.contains(drivetrain.lower(), na=False)]
+
+    result = filtered_df.iloc[offset:offset + limit]
+    return result.to_dict(orient="records")
