@@ -7,7 +7,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 app = FastAPI(
     title="Inventory API",
-    version="1.0",
+    version="1.1",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json"
@@ -47,10 +47,16 @@ def search_inventory(
     request: Request,
     make: Optional[str] = None,
     model: Optional[str] = None,
-    price: Optional[float] = None,
-    year: Optional[int] = None,
-    color: Optional[str] = None,
+    trim: Optional[str] = None,
     drivetrain: Optional[str] = None,
+    year: Optional[int] = None,
+    price: Optional[float] = None,
+    mileage: Optional[float] = None,
+    color: Optional[str] = None,
+    segment: Optional[str] = None,
+    body_type: Optional[str] = None,
+    condition: Optional[str] = None,
+    keyword: Optional[str] = None,
     limit: int = Query(50, description="Max number of results to return"),
     offset: int = Query(0, description="Starting index for pagination")
 ):
@@ -60,17 +66,40 @@ def search_inventory(
     filtered_df = df.copy()
 
     if make:
-        filtered_df = filtered_df[filtered_df["Make"].str.lower() == make.lower()]
+        filtered_df = filtered_df[filtered_df["Make"].str.contains(make, case=False, na=False)]
     if model:
-        filtered_df = filtered_df[filtered_df["Model"].str.lower() == model.lower()]
-    if price:
-        filtered_df = filtered_df[filtered_df["Price"].astype(float) <= price]
+        filtered_df = filtered_df[filtered_df["Model"].str.contains(model, case=False, na=False)]
+    if trim:
+        filtered_df = filtered_df[filtered_df["Trim"].str.contains(trim, case=False, na=False)]
+    if drivetrain:
+        filtered_df = filtered_df[filtered_df["Drivetrain"].str.contains(drivetrain, case=False, na=False)]
     if year:
         filtered_df = filtered_df[filtered_df["Year"].astype(int) == year]
+    if price:
+        filtered_df = filtered_df[filtered_df["Price"].astype(float) <= price]
+    if mileage:
+        filtered_df = filtered_df[filtered_df["Mileage"].astype(float) <= mileage]
     if color:
-        filtered_df = filtered_df[filtered_df["Exterior Specific Color"].str.lower().str.contains(color.lower(), na=False)]
-    if drivetrain:
-        filtered_df = filtered_df[filtered_df["Drivetrain"].str.lower().str.contains(drivetrain.lower(), na=False)]
+        filtered_df = filtered_df[filtered_df["Exterior Specific Color"].str.contains(color, case=False, na=False)]
+    if segment:
+        filtered_df = filtered_df[filtered_df["Segment"].str.contains(segment, case=False, na=False)]
+    if body_type:
+        filtered_df = filtered_df[filtered_df["Body Type"].str.contains(body_type, case=False, na=False)]
+    if condition:
+        filtered_df = filtered_df[filtered_df["Condition"].str.contains(condition, case=False, na=False)]
+
+    if keyword:
+        keyword = keyword.lower()
+        mask = (
+            df["Make"].str.lower().str.contains(keyword, na=False) |
+            df["Model"].str.lower().str.contains(keyword, na=False) |
+            df["Trim"].str.lower().str.contains(keyword, na=False) |
+            df["Drivetrain"].str.lower().str.contains(keyword, na=False) |
+            df["Exterior Specific Color"].str.lower().str.contains(keyword, na=False) |
+            df["Segment"].str.lower().str.contains(keyword, na=False) |
+            df["Body Type"].str.lower().str.contains(keyword, na=False)
+        )
+        filtered_df = filtered_df[mask]
 
     result = filtered_df.iloc[offset:offset + limit]
     return result.to_dict(orient="records")
