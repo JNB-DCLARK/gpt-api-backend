@@ -7,7 +7,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 app = FastAPI(
     title="Inventory API",
-    version="1.1",
+    version="1.2",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json"
@@ -45,6 +45,7 @@ def health_check():
 @app.get("/search")
 def search_inventory(
     request: Request,
+    stock: Optional[str] = None,
     make: Optional[str] = None,
     model: Optional[str] = None,
     trim: Optional[str] = None,
@@ -52,10 +53,17 @@ def search_inventory(
     year: Optional[int] = None,
     price: Optional[float] = None,
     mileage: Optional[float] = None,
+    condition: Optional[str] = None,
     color: Optional[str] = None,
+    interior_color: Optional[str] = None,
     segment: Optional[str] = None,
     body_type: Optional[str] = None,
-    condition: Optional[str] = None,
+    vin: Optional[str] = None,
+    dealer: Optional[str] = None,
+    description: Optional[str] = None,
+    packages: Optional[str] = None,
+    equipment: Optional[str] = None,
+    highlights: Optional[str] = None,
     keyword: Optional[str] = None,
     limit: int = Query(50, description="Max number of results to return"),
     offset: int = Query(0, description="Starting index for pagination")
@@ -65,41 +73,56 @@ def search_inventory(
 
     filtered_df = df.copy()
 
+    def contains(field, val):
+        return filtered_df[field].str.contains(val, case=False, na=False)
+
+    if stock:
+        filtered_df = filtered_df[filtered_df["Stock"].str.lower() == stock.lower()]
+    if vin:
+        filtered_df = filtered_df[filtered_df["VIN"].str.lower() == vin.lower()]
     if make:
-        filtered_df = filtered_df[filtered_df["Make"].str.contains(make, case=False, na=False)]
+        filtered_df = filtered_df[contains("Make", make)]
     if model:
-        filtered_df = filtered_df[filtered_df["Model"].str.contains(model, case=False, na=False)]
+        filtered_df = filtered_df[contains("Model", model)]
     if trim:
-        filtered_df = filtered_df[filtered_df["Trim"].str.contains(trim, case=False, na=False)]
+        filtered_df = filtered_df[contains("Trim", trim)]
     if drivetrain:
-        filtered_df = filtered_df[filtered_df["Drivetrain"].str.contains(drivetrain, case=False, na=False)]
+        filtered_df = filtered_df[contains("Drivetrain", drivetrain)]
+    if condition:
+        filtered_df = filtered_df[contains("Condition", condition)]
+    if color:
+        filtered_df = filtered_df[contains("Exterior Specific Color", color)]
+    if interior_color:
+        filtered_df = filtered_df[contains("Interior Specific Color", interior_color)]
+    if segment:
+        filtered_df = filtered_df[contains("Segment", segment)]
+    if body_type:
+        filtered_df = filtered_df[contains("Body Type", body_type)]
+    if dealer:
+        filtered_df = filtered_df[contains("Dealer Name", dealer)]
+    if description:
+        filtered_df = filtered_df[contains("Description", description)]
+    if packages:
+        filtered_df = filtered_df[contains("Packages", packages)]
+    if equipment:
+        filtered_df = filtered_df[contains("Popular Equipment", equipment)]
+    if highlights:
+        filtered_df = filtered_df[contains("Highlights", highlights)]
     if year:
         filtered_df = filtered_df[filtered_df["Year"].astype(int) == year]
     if price:
         filtered_df = filtered_df[filtered_df["Price"].astype(float) <= price]
     if mileage:
         filtered_df = filtered_df[filtered_df["Mileage"].astype(float) <= mileage]
-    if color:
-        filtered_df = filtered_df[filtered_df["Exterior Specific Color"].str.contains(color, case=False, na=False)]
-    if segment:
-        filtered_df = filtered_df[filtered_df["Segment"].str.contains(segment, case=False, na=False)]
-    if body_type:
-        filtered_df = filtered_df[filtered_df["Body Type"].str.contains(body_type, case=False, na=False)]
-    if condition:
-        filtered_df = filtered_df[filtered_df["Condition"].str.contains(condition, case=False, na=False)]
 
     if keyword:
-        keyword = keyword.lower()
-        mask = (
-            df["Make"].str.lower().str.contains(keyword, na=False) |
-            df["Model"].str.lower().str.contains(keyword, na=False) |
-            df["Trim"].str.lower().str.contains(keyword, na=False) |
-            df["Drivetrain"].str.lower().str.contains(keyword, na=False) |
-            df["Exterior Specific Color"].str.lower().str.contains(keyword, na=False) |
-            df["Segment"].str.lower().str.contains(keyword, na=False) |
-            df["Body Type"].str.lower().str.contains(keyword, na=False)
-        )
-        filtered_df = filtered_df[mask]
+        kw = keyword.lower()
+        fuzzy_mask = pd.Series(False, index=filtered_df.index)
+        for col in ["Make", "Model", "Trim", "Drivetrain", "Condition", "Exterior Specific Color",
+                    "Interior Specific Color", "Segment", "Body Type", "Dealer Name", "Description",
+                    "Packages", "Popular Equipment", "Highlights"]:
+            fuzzy_mask |= filtered_df[col].astype(str).str.lower().str.contains(kw, na=False)
+        filtered_df = filtered_df[fuzzy_mask]
 
     result = filtered_df.iloc[offset:offset + limit]
     return result.to_dict(orient="records")
